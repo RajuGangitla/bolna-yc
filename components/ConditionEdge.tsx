@@ -34,18 +34,20 @@ export function ConditionEdge({
   return (
     <>
       <BaseEdge id={id} path={edgePath} style={style} markerEnd={markerEnd} />
-      <EdgeLabelRenderer>
-        <div
-          style={{
-            position: 'absolute',
-            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-            pointerEvents: 'all',
-          }}
-          className="px-2 py-1 bg-background border border-border rounded-md text-xs shadow-sm max-w-[150px] truncate"
-        >
-          {conditionLabel || 'unlabeled'}
-        </div>
-      </EdgeLabelRenderer>
+      {conditionLabel && (
+        <EdgeLabelRenderer>
+          <div
+            style={{
+              position: 'absolute',
+              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+              pointerEvents: 'all',
+            }}
+            className="px-2 py-1 bg-background border border-border rounded-md text-xs shadow-sm max-w-[150px] truncate"
+          >
+            {conditionLabel}
+          </div>
+        </EdgeLabelRenderer>
+      )}
     </>
   );
 }

@@ -1,5 +1,3 @@
-"use client";
-
 import type { ConnectionLineComponent } from "@xyflow/react";
 
 const HALF = 0.5;

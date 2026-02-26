@@ -11,19 +11,47 @@ type NodeStatus = 'idle' | 'running' | 'success' | 'error';
 export function FlowNodeComponent({ id, data, selected }: NodeProps) {
   const nodeData = data as FlowNodeData;
   const setSelectedNode = useFlowStore((state) => state.setSelectedNode);
-  const nodeErrors = useFlowStore((state) => state.validationErrors).filter(
-    (e) => e.nodeId === id
-  );
+  const nodes = useFlowStore((state) => state.nodes);
+  const edges = useFlowStore((state) => state.edges);
+  
+  // Check if node is disconnected (no edges)
+  const connectedNodeIds = new Set<string>();
+  edges.forEach((edge) => {
+    connectedNodeIds.add(edge.source);
+    connectedNodeIds.add(edge.target);
+  });
+  
+  const isDisconnected = !nodeData.isStart && !connectedNodeIds.has(id);
 
   const status: NodeStatus = (nodeData as any).status || 'idle';
+
+  // Determine node type and styling
+  const isStart = nodeData.isStart;
+  const nodeType = isStart ? 'input' : 'action';
+  
+  // Color scheme based on node type
+  const colorConfig = {
+    input: {
+      iconBg: 'bg-blue-500',
+      icon: Play,
+      label: 'Input',
+    },
+    action: {
+      iconBg: 'bg-orange-500',
+      icon: Zap,
+      label: 'Action',
+    },
+  };
+
+  const config = colorConfig[nodeType];
+  const Icon = config.icon;
 
   return (
     <div
       className={cn(
-        'relative w-48 h-48 rounded-lg border bg-card transition-all duration-200 cursor-pointer',
+        'relative w-80 rounded-lg border bg-card shadow-md transition-all duration-150 ease-out cursor-pointer overflow-hidden',
         selected && 'border-primary ring-2 ring-primary/20',
-        nodeData.isStart && 'border-green-500',
-        nodeErrors.length > 0 && 'border-destructive',
+        isDisconnected && 'border-destructive border-2',
         status === 'success' && 'border-green-500',
         status === 'error' && 'border-red-500',
         status === 'running' && 'border-blue-500'
@@ -31,47 +59,55 @@ export function FlowNodeComponent({ id, data, selected }: NodeProps) {
       onClick={() => setSelectedNode(id)}
     >
       {status === 'running' && (
-        <div className="absolute inset-0 rounded-lg animate-pulse bg-blue-500/10" />
+        <div className="absolute inset-0 animate-pulse bg-blue-500/5" />
       )}
       
       <Handle type="target" position={Position.Left} className="!bg-muted-foreground !w-3 !h-3" />
       
-      <div className="flex flex-col items-center justify-center gap-3 p-4 h-full">
-        {status && status !== 'idle' && (
-          <div
-            className={cn(
-              'absolute top-2 right-2 rounded-full p-1',
-              status === 'success' && 'bg-green-500/50',
-              status === 'error' && 'bg-red-500/50'
-            )}
-          >
-            {status === 'success' && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
-            {status === 'error' && <XCircle className="w-3 h-3 text-white" strokeWidth={2.5} />}
-            {status === 'running' && <Loader2 className="w-3 h-3 text-white animate-spin" />}
-          </div>
-        )}
+      {/* Header with icon badge */}
+      <div className="flex items-start gap-3 p-4">
+        {/* Circular icon badge */}
+        <div className={cn(
+          'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center',
+          config.iconBg,
+          'text-white'
+        )}>
+          <Icon className="w-5 h-5" strokeWidth={2} />
+        </div>
 
-        {nodeData.isStart ? (
-          <Play className="w-10 h-10 text-green-500" strokeWidth={1.5} />
-        ) : (
-          <Zap className="w-10 h-10 text-blue-500" strokeWidth={1.5} />
-        )}
-        
-        <div className="flex flex-col items-center gap-1 text-center">
-          <div className="font-semibold text-sm">
-            {nodeData.label || 'Unnamed Node'}
+        {/* Title and description */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              {config.label}
+            </span>
+            {status && status !== 'idle' && status !== 'running' && (
+              <div
+                className={cn(
+                  'rounded-full p-0.5',
+                  status === 'success' && 'bg-green-500/20',
+                  status === 'error' && 'bg-red-500/20'
+                )}
+              >
+                {status === 'success' && <Check className="w-3 h-3 text-green-600" strokeWidth={2.5} />}
+                {status === 'error' && <XCircle className="w-3 h-3 text-red-600" strokeWidth={2.5} />}
+              </div>
+            )}
+            {status === 'running' && (
+              <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />
+            )}
           </div>
           
-          <div className="text-xs text-muted-foreground line-clamp-2">
-            {nodeData.isStart ? 'Start' : nodeData.description || 'No description'}
-          </div>
+          <h3 className="font-semibold text-sm mb-1 truncate">
+            {nodeData.label || 'Unnamed Node'}
+          </h3>
+          
+          {nodeData.description && (
+            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+              {nodeData.description}
+            </p>
+          )}
         </div>
-        
-        {nodeData.edges.length > 0 && (
-          <div className="absolute bottom-2 text-xs text-muted-foreground">
-            {nodeData.edges.length} edge{nodeData.edges.length !== 1 ? 's' : ''}
-          </div>
-        )}
       </div>
       
       <Handle type="source" position={Position.Right} className="!bg-muted-foreground !w-3 !h-3" />

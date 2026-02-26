@@ -4,7 +4,6 @@ import { useFlowStore } from '@/lib/store';
 import { Copy, Download, Upload } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 export function JsonPreview() {
@@ -12,7 +11,6 @@ export function JsonPreview() {
   const importFlow = useFlowStore((state) => state.importFlow);
   const nodes = useFlowStore((state) => state.nodes);
   const edges = useFlowStore((state) => state.edges);
-  const validationErrors = useFlowStore((state) => state.validationErrors);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [json, setJson] = useState(getFlowJson());
@@ -74,7 +72,7 @@ export function JsonPreview() {
   };
 
   return (
-    <div className="w-80 border-l bg-card flex flex-col h-full">
+    <div className="w-80 border-l bg-card flex flex-col h-screen">
       <div className="p-4 border-b flex items-center justify-between">
         <h2 className="font-semibold">JSON Preview</h2>
         <div className="flex gap-1">
@@ -112,21 +110,6 @@ export function JsonPreview() {
         </div>
       </div>
 
-      {validationErrors.length > 0 && (
-        <div className="p-3 bg-destructive/10 border-b border-destructive">
-          <h3 className="text-sm font-medium text-destructive mb-2">
-            Validation Errors ({validationErrors.length})
-          </h3>
-          <ul className="text-xs text-destructive space-y-1">
-            {validationErrors.map((error, index) => (
-              <li key={index}>
-                {error.nodeId && <span className="font-medium">{error.nodeId}: </span>}
-                {error.message}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       <div className="flex-1 overflow-auto p-4">
         <pre
@@ -144,15 +127,6 @@ export function JsonPreview() {
           <div className="flex justify-between">
             <span>Edges:</span>
             <span className="font-medium">{edges.length}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Status:</span>
-            <span className={cn(
-              'font-medium',
-              validationErrors.length > 0 ? 'text-destructive' : 'text-green-600'
-            )}>
-              {validationErrors.length > 0 ? `${validationErrors.length} error(s)` : 'Valid'}
-            </span>
           </div>
         </div>
       </div>

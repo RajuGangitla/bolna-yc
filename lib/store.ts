@@ -17,7 +17,7 @@ const createInitialNode = (): FlowNode => {
   return {
     id,
     type: 'flowNode',
-    position: { x: 100, y: 100 },
+    position: { x: 400, y: 300 },
     data: {
       id: id,
       description: 'Start node description',
@@ -34,7 +34,7 @@ export const createDefaultNode = (isStart: boolean = false, index: number = 1): 
   return {
     id,
     type: 'flowNode',
-    position: { x: Math.random() * 400 + 100, y: Math.random() * 400 + 100 },
+    position: { x: Math.random() * 300 + 500, y: Math.random() * 400 + 100 },
     data: {
       id,
       description: 'Start node description',
@@ -142,15 +142,82 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   },
 
   onNodesChange: (changes: NodeChange[]) => {
-    set((state) => ({
-      nodes: applyNodeChanges(changes, state.nodes) as FlowNode[],
-    }));
+    set((state) => {
+      const updatedNodes = applyNodeChanges(changes, state.nodes) as FlowNode[];
+      
+      // Clean up edges from node data when nodes are deleted
+      const deletedNodeIds = new Set<string>();
+      changes.forEach((change) => {
+        if (change.type === 'remove') {
+          deletedNodeIds.add(change.id);
+        }
+      });
+      
+      // Remove edges that reference deleted nodes
+      const cleanedNodes = updatedNodes.map((node) => {
+        if (deletedNodeIds.has(node.id)) {
+          return node;
+        }
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            edges: node.data.edges.filter(
+              (edge) => !deletedNodeIds.has(edge.to_node_id)
+            ),
+          },
+        };
+      });
+      
+      return { nodes: cleanedNodes };
+    });
+    get().validate();
   },
 
   onEdgesChange: (changes: EdgeChange[]) => {
-    set((state) => ({
-      edges: applyEdgeChanges(changes, state.edges),
-    }));
+    set((state) => {
+      const updatedEdges = applyEdgeChanges(changes, state.edges);
+      
+      // Clean up edges from node data when edges are deleted
+      const deletedEdgeIds = new Set<string>();
+      changes.forEach((change) => {
+        if (change.type === 'remove') {
+          deletedEdgeIds.add(change.id);
+        }
+      });
+      
+      if (deletedEdgeIds.size > 0) {
+        const deletedEdges = state.edges.filter((e) =>
+          deletedEdgeIds.has(e.id)
+        );
+        
+        const cleanedNodes = state.nodes.map((node) => {
+          const edgesToRemove = deletedEdges.filter(
+            (edge) => edge.source === node.id
+          );
+          
+          if (edgesToRemove.length === 0) {
+            return node;
+          }
+          
+          const targetIds = new Set(edgesToRemove.map((e) => e.target));
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              edges: node.data.edges.filter(
+                (edge) => !targetIds.has(edge.to_node_id)
+              ),
+            },
+          };
+        });
+        
+        return { edges: updatedEdges, nodes: cleanedNodes };
+      }
+      
+      return { edges: updatedEdges };
+    });
+    get().validate();
   },
 
   onConnect: (connection: Connection) => {
