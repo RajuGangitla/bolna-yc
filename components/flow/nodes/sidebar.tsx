@@ -30,7 +30,7 @@ export default function NodeSidebar() {
                             <span className="sr-only">Close</span>
                         </Button>
                     </DrawerHeader>
-                    <NodeSidebarContent onClose={handleCloseSidebar} />
+                    <NodeSidebarContent />
                 </DrawerContent>
             </Drawer>
 

@@ -15,6 +15,7 @@ export const Canvas = ({ children, ...props }: CanvasProps) => {
       selectionOnDrag={false}
       zoomOnDoubleClick={false}
       zoomOnPinch
+      proOptions={{ hideAttribution: true }}
       {...props}
     >
       <Background 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useFlowStore } from '@/lib/store';
-import { FlowEdge } from '@/lib/types';
+import { FlowEdge, FlowNodeData } from '@/lib/types';
 import { Plus, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -18,11 +18,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-interface NodeSidebarContentProps {
-  onClose: () => void;
-}
 
-export function NodeSidebarContent({ onClose }: NodeSidebarContentProps) {
+export function NodeSidebarContent() {
   const selectedNodeId = useFlowStore((state) => state.selectedNodeId);
   const nodes = useFlowStore((state) => state.nodes);
   const updateNode = useFlowStore((state) => state.updateNode);
@@ -30,8 +27,10 @@ export function NodeSidebarContent({ onClose }: NodeSidebarContentProps) {
   const removeEdgeFromNode = useFlowStore((state) => state.removeEdgeFromNode);
   const updateEdgeInNode = useFlowStore((state) => state.updateEdgeInNode);
   const validationErrors = useFlowStore((state) => state.validationErrors);
-
+ 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
+  
+  const nodeErrors = validationErrors.filter((e) => e.nodeId === selectedNode?.id);
 
   const [newEdgeTarget, setNewEdgeTarget] = useState('');
   const [newEdgeCondition, setNewEdgeCondition] = useState('');
@@ -50,8 +49,17 @@ export function NodeSidebarContent({ onClose }: NodeSidebarContentProps) {
       </div>
     );
   }
+  
+  const nodeVariants = {
+    trigger: { description: 'Starts the workflow when a specific event occurs' },
+    agent: { description: 'AI-powered node that processes and responds to user input' },
+    action: { description: 'Executes a task like sending emails or API calls' },
+  };
 
-  const nodeErrors = validationErrors.filter((e) => e.nodeId === selectedNode.id);
+  const nodeType = selectedNode.data.type || 'agent';
+  const defaultDescription = nodeVariants[nodeType as keyof typeof nodeVariants]?.description || '';
+
+  const disconnectedError = nodeErrors.find((e) => e.field === 'disconnected');
 
   const handleAddEdge = () => {
     if (newEdgeTarget) {
@@ -59,7 +67,6 @@ export function NodeSidebarContent({ onClose }: NodeSidebarContentProps) {
         to_node_id: newEdgeTarget,
         condition: newEdgeCondition,
       });
-      toast.success('Edge added');
       setNewEdgeTarget('');
       setNewEdgeCondition('');
     }
@@ -77,6 +84,11 @@ export function NodeSidebarContent({ onClose }: NodeSidebarContentProps) {
 
   return (
     <div className="flex flex-col h-full">
+      {disconnectedError && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-md m-4 mb-0">
+          <p className="text-xs text-amber-700">{disconnectedError.message}</p>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <div className="space-y-2">
           <Label htmlFor="node-name">Node Name</Label>
@@ -90,43 +102,15 @@ export function NodeSidebarContent({ onClose }: NodeSidebarContentProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="node-id">Node ID</Label>
-          <Input
-            id="node-id"
-            type="text"
-            value={selectedNode.data.id}
-            onChange={(e) => updateNode(selectedNode.id, { id: e.target.value })}
-            placeholder="Unique node ID"
-            className={cn(
-              nodeErrors.some((e) => e.field === 'id') && 'border-destructive'
-            )}
-          />
-          {nodeErrors.some((e) => e.field === 'id') && (
-            <p className="text-destructive text-xs">
-              {nodeErrors.find((e) => e.field === 'id')?.message}
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="node-description">
-            Description <span className="text-destructive">*</span>
-          </Label>
+          <Label htmlFor="node-description">Description</Label>
           <Textarea
             id="node-description"
-            value={selectedNode.data.description}
+            value={selectedNode.data.description || ''}
             onChange={(e) => updateNode(selectedNode.id, { description: e.target.value })}
-            placeholder="Describe this node"
+            placeholder={defaultDescription}
             rows={3}
-            className={cn(
-              nodeErrors.some((e) => e.field === 'description') && 'border-destructive'
-            )}
           />
-          {nodeErrors.some((e) => e.field === 'description') && (
-            <p className="text-destructive text-xs">
-              {nodeErrors.find((e) => e.field === 'description')?.message}
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground">{defaultDescription}</p>
         </div>
 
         <div className="border-t pt-4">

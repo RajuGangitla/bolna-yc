@@ -8,8 +8,8 @@ export interface FlowEdge {
 
 export interface FlowNodeData extends Record<string, unknown> {
   id: string;
+  type: string;
   description: string;
-  prompt: string;
   edges: FlowEdge[];
   isStart: boolean;
   label: string;

@@ -14,34 +14,58 @@ const generateId = () => `node_${Date.now()}_${Math.random().toString(36).substr
 
 const createInitialNode = (): FlowNode => {
   const id = generateId();
+  const type = 'trigger';
   return {
     id,
     type: 'flowNode',
     position: { x: 400, y: 300 },
     data: {
-      id: id,
-      description: 'Start node description',
-      prompt: '',
+      id,
+      type,
+      description: NODE_DESCRIPTIONS[type],
       edges: [],
       isStart: true,
-      label: 'Start Node',
+      label: 'Trigger 1',
     },
   };
 };
 
-export const createDefaultNode = (isStart: boolean = false, index: number = 1): FlowNode => {
+const NODE_TYPES = ['trigger', 'agent', 'action'] as const;
+
+const NODE_LABELS: Record<string, string> = {
+  trigger: 'Trigger',
+  agent: 'Agent',
+  action: 'Action',
+};
+
+const NODE_DESCRIPTIONS: Record<string, string> = {
+  trigger: 'Entry point that starts the conversation flow',
+  agent: 'AI agent that processes and generates responses',
+  action: 'Performs a specific task or function',
+};
+
+let nodeCounter = {
+  trigger: 1,
+  agent: 1,
+  action: 1,
+};
+
+export const createDefaultNode = (isStart: boolean = false): FlowNode => {
   const id = generateId();
+  const randomType = NODE_TYPES[Math.floor(Math.random() * NODE_TYPES.length)];
+  const label = `${NODE_LABELS[randomType]} ${nodeCounter[randomType as keyof typeof nodeCounter]++}`;
+  
   return {
     id,
     type: 'flowNode',
     position: { x: Math.random() * 300 + 500, y: Math.random() * 400 + 100 },
     data: {
       id,
-      description: 'Start node description',
-      prompt: '',
+      type: randomType,
+      description: NODE_DESCRIPTIONS[randomType],
       edges: [],
       isStart,
-      label: `Node ${index}`,
+      label,
     },
   };
 };
@@ -60,7 +84,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   ...initialState,
 
   addNode: () => {
-    const newNode = createDefaultNode(false, get().nodes.length + 1);
+    const newNode = createDefaultNode(false);
     set((state) => ({
       nodes: [...state.nodes, newNode],
     }));
@@ -105,23 +129,58 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   },
 
   addEdgeToNode: (nodeId: string, edge: FlowEdge) => {
-    set((state) => ({
-      nodes: state.nodes.map((node) =>
-        node.id === nodeId
-          ? { ...node, data: { ...node.data, edges: [...node.data.edges, edge] } }
-          : node
-      ),
-    }));
+    const existingEdge = useFlowStore.getState().edges.find(
+      (e) => e.source === nodeId && e.target === edge.to_node_id
+    );
+    if (existingEdge) {
+      toast.error('Edge already exists between these nodes');
+      return;
+    }
+
+    set((state) => {
+      const sourceNode = state.nodes.find((n) => n.id === nodeId);
+      if (!sourceNode) return state;
+
+      const newReactEdge: FlowReactEdge = {
+        id: `e_${nodeId}_${edge.to_node_id}_${Date.now()}`,
+        source: nodeId,
+        target: edge.to_node_id,
+        type: 'animated',
+        animated: true,
+      };
+
+      toast.success('Edge created successfully');
+      
+      return {
+        nodes: state.nodes.map((node) =>
+          node.id === nodeId
+            ? { ...node, data: { ...node.data, edges: [...node.data.edges, edge] } }
+            : node
+        ),
+        edges: [...state.edges, newReactEdge],
+      };
+    });
   },
 
   removeEdgeFromNode: (nodeId: string, edgeIndex: number) => {
-    set((state) => ({
-      nodes: state.nodes.map((node) =>
-        node.id === nodeId
-          ? { ...node, data: { ...node.data, edges: node.data.edges.filter((_, i) => i !== edgeIndex) } }
-          : node
-      ),
-    }));
+    set((state) => {
+      const node = state.nodes.find((n) => n.id === nodeId);
+      if (!node) return state;
+      
+      const edgeToRemove = node.data.edges[edgeIndex];
+      if (!edgeToRemove) return state;
+
+      return {
+        nodes: state.nodes.map((node) =>
+          node.id === nodeId
+            ? { ...node, data: { ...node.data, edges: node.data.edges.filter((_, i) => i !== edgeIndex) } }
+            : node
+        ),
+        edges: state.edges.filter(
+          (e) => !(e.source === nodeId && e.target === edgeToRemove.to_node_id)
+        ),
+      };
+    });
     get().validate();
   },
 
@@ -263,18 +322,10 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         errors.push({
           nodeId: node.id,
           field: 'id',
-          message: `Duplicate node ID: ${node.data.id}`,
+          message: 'Duplicate node ID',
         });
       }
       nodeIds.add(node.data.id);
-
-      if (!node.data.description || node.data.description.trim() === '') {
-        errors.push({
-          nodeId: node.id,
-          field: 'description',
-          message: 'Description is required',
-        });
-      }
     });
 
     if (!startNodeId) {
@@ -323,9 +374,9 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     const { nodes, startNodeId } = get();
     const flowJson: FlowJson = {
       nodes: nodes.map((node) => ({
-        id: node.id,
+        id: node.data.id,
+        type: node.data.type,
         description: node.data.description,
-        prompt: node.data.prompt,
         edges: node.data.edges,
         isStart: node.data.isStart,
         label: node.data.label,
