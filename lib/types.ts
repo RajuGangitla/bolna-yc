@@ -1,9 +1,12 @@
 import { Node, Edge as ReactFlowEdge } from '@xyflow/react';
 
 export interface FlowEdge {
+  id?: string;
   to_node_id: string;
   condition: string;
   parameters?: Record<string, string>;
+  sourcePosition?: 'left' | 'right';
+  targetPosition?: 'left' | 'right';
 }
 
 export interface FlowNodeData extends Record<string, unknown> {
@@ -38,8 +41,8 @@ export interface FlowState {
   setSelectedNode: (nodeId: string | null) => void;
   setStartNode: (nodeId: string) => void;
   addEdgeToNode: (nodeId: string, edge: FlowEdge) => void;
-  removeEdgeFromNode: (nodeId: string, edgeIndex: number) => void;
-  updateEdgeInNode: (nodeId: string, edgeIndex: number, edge: FlowEdge) => void;
+  removeEdgeFromNode: (nodeId: string, edgeId: string) => void;
+  updateEdgeInNode: (nodeId: string, edgeId: string, edge: FlowEdge) => void;
   onNodesChange: (changes: any) => void;
   onEdgesChange: (changes: any) => void;
   onConnect: (connection: any) => void;

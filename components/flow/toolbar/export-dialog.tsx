@@ -13,13 +13,17 @@ import {
 } from '@/components/ui/dialog';
 import { useFlowStore } from '@/lib/store';
 import { FlowState } from '@/lib/types';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 
 export default function ExportDialog() {
     const getFlowJson = useFlowStore((state: FlowState) => state.getFlowJson);
+    const nodes = useFlowStore((state) => state.nodes);
+    const edges = useFlowStore((state) => state.edges);
+    const startNodeId = useFlowStore((state) => state.startNodeId);
     const [open, setOpen] = useState(false);
-    const flowJson = getFlowJson();
+    
+    const flowJson = useMemo(() => getFlowJson(), [nodes, edges, startNodeId]);
   
     const handleCopy = () => {
         navigator.clipboard.writeText(flowJson);

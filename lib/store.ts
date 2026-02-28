@@ -8,12 +8,11 @@ import {
   EdgeChange 
 } from '@xyflow/react';
 import { toast } from 'sonner';
+import { v4 as uuidv4 } from 'uuid';
 import { FlowState, FlowNode, FlowNodeData, FlowReactEdge, ValidationError, FlowJson, FlowEdge } from './types';
 
-const generateId = () => `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
 const createInitialNode = (): FlowNode => {
-  const id = generateId();
+  const id = uuidv4();
   const type = 'trigger';
   return {
     id,
@@ -51,7 +50,7 @@ let nodeCounter = {
 };
 
 export const createDefaultNode = (isStart: boolean = false): FlowNode => {
-  const id = generateId();
+  const id = uuidv4();
   const randomType = NODE_TYPES[Math.floor(Math.random() * NODE_TYPES.length)];
   const label = `${NODE_LABELS[randomType]} ${nodeCounter[randomType as keyof typeof nodeCounter]++}`;
   
@@ -141,20 +140,25 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       const sourceNode = state.nodes.find((n) => n.id === nodeId);
       if (!sourceNode) return state;
 
+      const edgeId = uuidv4();
       const newReactEdge: FlowReactEdge = {
-        id: `e_${nodeId}_${edge.to_node_id}_${Date.now()}`,
+        id: edgeId,
         source: nodeId,
         target: edge.to_node_id,
         type: 'animated',
         animated: true,
+        sourceHandle: edge.sourcePosition === 'left' ? 'source-left' : 'source-right',
+        targetHandle: edge.targetPosition === 'right' ? 'target-right' : 'target-left',
       };
 
+      const newEdge = { ...edge, id: edgeId };
+      
       toast.success('Edge created successfully');
       
       return {
         nodes: state.nodes.map((node) =>
           node.id === nodeId
-            ? { ...node, data: { ...node.data, edges: [...node.data.edges, edge] } }
+            ? { ...node, data: { ...node.data, edges: [...node.data.edges, newEdge] } }
             : node
         ),
         edges: [...state.edges, newReactEdge],
@@ -162,18 +166,18 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     });
   },
 
-  removeEdgeFromNode: (nodeId: string, edgeIndex: number) => {
+  removeEdgeFromNode: (nodeId: string, edgeId: string) => {
     set((state) => {
       const node = state.nodes.find((n) => n.id === nodeId);
       if (!node) return state;
       
-      const edgeToRemove = node.data.edges[edgeIndex];
+      const edgeToRemove = node.data.edges.find((e) => e.id === edgeId);
       if (!edgeToRemove) return state;
 
       return {
         nodes: state.nodes.map((node) =>
           node.id === nodeId
-            ? { ...node, data: { ...node.data, edges: node.data.edges.filter((_, i) => i !== edgeIndex) } }
+            ? { ...node, data: { ...node.data, edges: node.data.edges.filter((e) => e.id !== edgeId) } }
             : node
         ),
         edges: state.edges.filter(
@@ -184,20 +188,45 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     get().validate();
   },
 
-  updateEdgeInNode: (nodeId: string, edgeIndex: number, edge: FlowEdge) => {
-    set((state) => ({
-      nodes: state.nodes.map((node) =>
-        node.id === nodeId
-          ? {
-              ...node,
-              data: {
-                ...node.data,
-                edges: node.data.edges.map((e, i) => (i === edgeIndex ? edge : e)),
-              },
-            }
-          : node
-      ),
-    }));
+  updateEdgeInNode: (nodeId: string, edgeId: string, edge: FlowEdge) => {
+    set((state) => {
+      const node = state.nodes.find((n) => n.id === nodeId);
+      if (!node) return state;
+      
+      const edgeIndex = node.data.edges.findIndex((e) => e.id === edgeId);
+      if (edgeIndex === -1) return state;
+      
+      const existingEdge = state.edges.find(
+        (e) => e.source === nodeId && e.target === edge.to_node_id
+      );
+      
+      const updatedEdges = existingEdge
+        ? state.edges.map((e) =>
+            e.source === nodeId && e.target === edge.to_node_id
+              ? { 
+                  ...e, 
+                  sourceHandle: edge.sourcePosition === 'left' ? 'source-left' : 'source-right',
+                  targetHandle: edge.targetPosition === 'right' ? 'target-right' : 'target-left',
+                }
+              : e
+          )
+        : state.edges;
+
+      return {
+        nodes: state.nodes.map((node) =>
+          node.id === nodeId
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  edges: node.data.edges.map((e, i) => (i === edgeIndex ? edge : e)),
+                },
+              }
+            : node
+        ),
+        edges: updatedEdges,
+      };
+    });
   },
 
   onNodesChange: (changes: NodeChange[]) => {
@@ -288,7 +317,9 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       
       const sourceNode = state.nodes.find(n => n.id === connection.source);
       if (sourceNode) {
+        const edgeId = `e_${connection.source}_${connection.target}_${Date.now()}`;
         const newEdge: FlowEdge = {
+          id: edgeId,
           to_node_id: connection.target!,
           condition: '',
         };

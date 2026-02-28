@@ -18,7 +18,7 @@ const edgeTypes = {
 };
 
 
-export default function FlowBuilder(){
+export default function FlowBuilder() {
 
   const [mounted, setMounted] = useState(false);
   const storeNodes = useFlowStore((state) => state.nodes);
@@ -47,17 +47,13 @@ export default function FlowBuilder(){
     onConnect(connection);
   }
 
-  const handleNodeClick = useCallback(
-    (_: React.MouseEvent, node: { id: string }) => {
-      setSelectedNode(node.id);
-    },
-    [setSelectedNode]
-  );
+  const handleNodeClick = (_: React.MouseEvent, node: { id: string }) => {
+    setSelectedNode(node.id);
+  }
 
-  const handlePaneClick = useCallback(() => {
+  const handlePaneClick = () => {
     setSelectedNode(null);
-  }, [setSelectedNode]);
-
+  }
 
   useEffect(() => {
     if (mounted) {
@@ -74,7 +70,6 @@ export default function FlowBuilder(){
   }
   return (
     <>
-      {/* React Flow Canvas */}
       <Canvas
         className="bg-background"
         connectionLineComponent={Connection}
@@ -98,6 +93,6 @@ export default function FlowBuilder(){
           <Controls />
         </Panel>
       </Canvas>
-      </>
+    </>
   )
 }

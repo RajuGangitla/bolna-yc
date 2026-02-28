@@ -1,6 +1,5 @@
 import {
   BaseEdge,
-  type EdgeProps,
   getBezierPath,
   getSimpleBezierPath,
   type InternalNode,
@@ -8,6 +7,23 @@ import {
   Position,
   useInternalNode,
 } from "@xyflow/react";
+
+type EdgeProps = {
+  id: string;
+  sourceX: number;
+  sourceY: number;
+  targetX: number;
+  targetY: number;
+  sourcePosition: Position;
+  targetPosition: Position;
+  source: string;
+  target: string;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
+  style?: React.CSSProperties;
+  markerEnd?: string;
+  selected?: boolean;
+};
 
 const Temporary = ({
   id,
@@ -87,11 +103,13 @@ const getHandleCoordsByPosition = (
 
 const getEdgeParams = (
   source: InternalNode<Node>,
-  target: InternalNode<Node>
+  target: InternalNode<Node>,
+  sourceHandle?: string | null,
+  targetHandle?: string | null
 ) => {
-  const sourcePos = Position.Right;
+  const sourcePos = sourceHandle === 'source-left' ? Position.Left : Position.Right;
   const [sx, sy] = getHandleCoordsByPosition(source, sourcePos);
-  const targetPos = Position.Left;
+  const targetPos = targetHandle === 'target-right' ? Position.Right : Position.Left;
   const [tx, ty] = getHandleCoordsByPosition(target, targetPos);
 
   return {
@@ -104,7 +122,7 @@ const getEdgeParams = (
   };
 };
 
-const Animated = ({ id, source, target, style, selected }: EdgeProps) => {
+const Animated = ({ id, source, target, sourceHandle, targetHandle, style, selected }: EdgeProps) => {
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
 
@@ -114,7 +132,9 @@ const Animated = ({ id, source, target, style, selected }: EdgeProps) => {
 
   const { sx, sy, tx, ty, sourcePos, targetPos } = getEdgeParams(
     sourceNode,
-    targetNode
+    targetNode,
+    sourceHandle,
+    targetHandle
   );
 
   const [edgePath] = getBezierPath({

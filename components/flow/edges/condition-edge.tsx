@@ -1,7 +1,23 @@
 'use client';
 
-import { BaseEdge, EdgeLabelRenderer, EdgeProps, getSmoothStepPath } from '@xyflow/react';
+import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, Position } from '@xyflow/react';
 import { useFlowStore } from '@/lib/store';
+
+type EdgeProps = {
+  id: string;
+  sourceX: number;
+  sourceY: number;
+  targetX: number;
+  targetY: number;
+  sourcePosition: Position;
+  targetPosition: Position;
+  source: string;
+  target: string;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
+  style?: React.CSSProperties;
+  markerEnd?: string;
+};
 
 export function ConditionEdge({
   id,
@@ -13,18 +29,23 @@ export function ConditionEdge({
   targetPosition,
   source,
   target,
+  sourceHandle,
+  targetHandle,
   style = {},
   markerEnd,
 }: EdgeProps) {
   const nodes = useFlowStore((state) => state.nodes);
   
+  const effectiveSourcePosition = sourceHandle === 'source-left' ? Position.Left : sourcePosition;
+  const effectiveTargetPosition = targetHandle === 'target-right' ? Position.Right : Position.Left;
+  
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
-    sourcePosition,
+    sourcePosition: effectiveSourcePosition,
     targetX,
     targetY,
-    targetPosition,
+    targetPosition: effectiveTargetPosition,
   });
 
   const sourceNode = nodes.find((n) => n.id === source);
