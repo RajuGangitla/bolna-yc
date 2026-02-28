@@ -20,29 +20,18 @@ export function AddEdge() {
   const addEdgeToNode = useFlowStore((state) => state.addEdgeToNode);
 
   const [target, setTarget] = useState('');
-  const [condition, setCondition] = useState('');
-  const [sourcePosition, setSourcePosition] = useState<'left' | 'right'>('right');
-  const [targetPosition, setTargetPosition] = useState<'left' | 'right'>('left');
 
   useEffect(() => {
     setTarget('');
-    setCondition('');
-    setSourcePosition('right');
-    setTargetPosition('left');
   }, [selectedNodeId]);
 
   const handleAddEdge = () => {
     if (target && selectedNodeId) {
       addEdgeToNode(selectedNodeId, {
         to_node_id: target,
-        condition,
-        sourcePosition,
-        targetPosition,
+        condition: '',
       });
       setTarget('');
-      setCondition('');
-      setSourcePosition('right');
-      setTargetPosition('left');
     }
   };
 
@@ -71,43 +60,6 @@ export function AddEdge() {
             ))}
         </SelectContent>
       </Select>
-      <Input
-        type="text"
-        value={condition}
-        onChange={(e) => setCondition(e.target.value)}
-        placeholder="e.g., if user says 'hello'"
-        className="w-full"
-      />
-      <div className="space-y-2">
-        <Label className="text-xs">Source Position</Label>
-        <Select 
-          value={sourcePosition} 
-          onValueChange={(value: 'left' | 'right') => setSourcePosition(value)}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select source position" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="right">Right (→)</SelectItem>
-            <SelectItem value="left">Left (←)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label className="text-xs">Target Position</Label>
-        <Select 
-          value={targetPosition} 
-          onValueChange={(value: 'left' | 'right') => setTargetPosition(value)}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select target position" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="left">(←) Left</SelectItem>
-            <SelectItem value="right">Right (→)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
       <Button
         onClick={handleAddEdge}
         disabled={!target}

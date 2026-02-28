@@ -3,7 +3,6 @@
 import { useFlowStore } from '@/lib/store';
 import { FlowEdge } from '@/lib/types';
 import { Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,7 +34,6 @@ export function EdgeItem({ edge, nodeId }: EdgeItemProps) {
   const handleDeleteEdge = () => {
     if (edge.id) {
       removeEdgeFromNode(nodeId, edge.id);
-      toast.success('Edge removed');
     }
   };
 
@@ -45,8 +43,7 @@ export function EdgeItem({ edge, nodeId }: EdgeItemProps) {
     <div className="mb-4 p-3 bg-muted rounded-md space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground">
-          Edge to: {targetNode?.data.label || 'Unknown'} 
-          ({edge.sourcePosition === 'left' ? '←' : '→'} → {edge.targetPosition === 'right' ? '→' : '←'})
+          Edge to: {targetNode?.data.label || 'Unknown'}
         </span>
         <Button
           variant="ghost"
@@ -85,38 +82,6 @@ export function EdgeItem({ edge, nodeId }: EdgeItemProps) {
           placeholder="e.g., if user says 'hello'"
           className="w-full"
         />
-      </div>
-      
-      <div className="space-y-2">
-        <Label className="text-xs">Source Position</Label>
-        <Select
-          value={edge.sourcePosition || 'right'}
-          onValueChange={(value: 'left' | 'right') => handleUpdateEdge('sourcePosition', value)}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select source position" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="right">Right (→)</SelectItem>
-            <SelectItem value="left">Left (←)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div className="space-y-2">
-        <Label className="text-xs">Target Position</Label>
-        <Select
-          value={edge.targetPosition || 'left'}
-          onValueChange={(value: 'left' | 'right') => handleUpdateEdge('targetPosition', value)}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select target position" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="left">(←) Left</SelectItem>
-            <SelectItem value="right">Right (→)</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
     </div>
   );

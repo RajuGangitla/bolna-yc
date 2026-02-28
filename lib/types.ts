@@ -1,4 +1,4 @@
-import { Node, Edge as ReactFlowEdge } from '@xyflow/react';
+import { Node, Edge as ReactFlowEdge, NodeChange, EdgeChange, Connection } from '@xyflow/react';
 
 export interface FlowEdge {
   id?: string;
@@ -43,9 +43,9 @@ export interface FlowState {
   addEdgeToNode: (nodeId: string, edge: FlowEdge) => void;
   removeEdgeFromNode: (nodeId: string, edgeId: string) => void;
   updateEdgeInNode: (nodeId: string, edgeId: string, edge: FlowEdge) => void;
-  onNodesChange: (changes: any) => void;
-  onEdgesChange: (changes: any) => void;
-  onConnect: (connection: any) => void;
+  onNodesChange: (changes: NodeChange[]) => void;
+  onEdgesChange: (changes: EdgeChange[]) => void;
+  onConnect: (connection: Connection) => void;
   validate: () => boolean;
   importFlow: (flow: { nodes: FlowNode[]; edges: FlowReactEdge[] }) => void;
   getFlowJson: () => string;

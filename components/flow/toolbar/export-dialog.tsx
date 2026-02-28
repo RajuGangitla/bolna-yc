@@ -14,6 +14,7 @@ import {
 import { useFlowStore } from '@/lib/store';
 import { FlowState } from '@/lib/types';
 import { useState, useMemo } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 export default function ExportDialog() {
@@ -46,9 +47,16 @@ export default function ExportDialog() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="accent" size="icon" onClick={() => setOpen(true)} title="Export">
-                    <Download className="w-4 h-4" />
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="accent" size="icon" onClick={() => setOpen(true)}>
+                            <Download className="w-4 h-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Export Flow</p>
+                    </TooltipContent>
+                </Tooltip>
             </DialogTrigger>
             <DialogContent className="max-w-2xl" showCloseButton={false}>
                 <DialogHeader>

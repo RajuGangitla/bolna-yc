@@ -6,9 +6,10 @@ interface NodeContainerProps {
   variant: NodeVariant;
   selected?: boolean;
   status: string;
+  isStart?: boolean;
 }
 
-export function NodeContainer({ children, variant, selected, status }: NodeContainerProps) {
+export function NodeContainer({ children, variant, selected, status, isStart }: NodeContainerProps) {
   return (
     <div className={cn(
       'group relative w-[320px] rounded-3xl border bg-card transition-all duration-300 ease-in-out',

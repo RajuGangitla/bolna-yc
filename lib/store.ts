@@ -10,6 +10,7 @@ import {
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import { FlowState, FlowNode, FlowNodeData, FlowReactEdge, ValidationError, FlowJson, FlowEdge } from './types';
+import { nodeVariants } from '@/components/flow/nodes/node-variants';
 
 const createInitialNode = (): FlowNode => {
   const id = uuidv4();
@@ -21,7 +22,7 @@ const createInitialNode = (): FlowNode => {
     data: {
       id,
       type,
-      description: NODE_DESCRIPTIONS[type],
+      description: nodeVariants[type]?.description || '',
       edges: [],
       isStart: true,
       label: 'Trigger 1',
@@ -29,39 +30,41 @@ const createInitialNode = (): FlowNode => {
   };
 };
 
-const NODE_TYPES = ['trigger', 'agent', 'action'] as const;
-
 const NODE_LABELS: Record<string, string> = {
   trigger: 'Trigger',
   agent: 'Agent',
   action: 'Action',
 };
 
-const NODE_DESCRIPTIONS: Record<string, string> = {
-  trigger: 'Entry point that starts the conversation flow',
-  agent: 'AI agent that processes and generates responses',
-  action: 'Performs a specific task or function',
+const getNodeLabel = (type: string, existingNodes: FlowNode[]): string => {
+  const typeNodes = existingNodes.filter(n => n.data.type === type);
+  const count = typeNodes.length + 1;
+  return `${NODE_LABELS[type]} ${count}`;
 };
 
-let nodeCounter = {
-  trigger: 1,
-  agent: 1,
-  action: 1,
-};
-
-export const createDefaultNode = (isStart: boolean = false): FlowNode => {
+export const createDefaultNode = (isStart: boolean = false, existingNodes: FlowNode[] = []): FlowNode => {
   const id = uuidv4();
-  const randomType = NODE_TYPES[Math.floor(Math.random() * NODE_TYPES.length)];
-  const label = `${NODE_LABELS[randomType]} ${nodeCounter[randomType as keyof typeof nodeCounter]++}`;
+  const defaultType = 'agent';
+  const label = getNodeLabel(defaultType, existingNodes);
+  
+  let position = { x: 100, y: 100 };
+  
+  if (existingNodes.length > 0) {
+    const lastNode = existingNodes[existingNodes.length - 1];
+    position = {
+      x: lastNode.position.x + 350,
+      y: lastNode.position.y + (Math.random() * 100 - 50),
+    };
+  }
   
   return {
     id,
     type: 'flowNode',
-    position: { x: Math.random() * 300 + 500, y: Math.random() * 400 + 100 },
+    position,
     data: {
       id,
-      type: randomType,
-      description: NODE_DESCRIPTIONS[randomType],
+      type: defaultType,
+      description: nodeVariants[defaultType]?.description || '',
       edges: [],
       isStart,
       label,
@@ -79,22 +82,35 @@ const initialState = {
   validationErrors: [] as ValidationError[],
 };
 
+let validateTimeout: ReturnType<typeof setTimeout> | null = null;
+
 export const useFlowStore = create<FlowState>((set, get) => ({
   ...initialState,
 
   addNode: () => {
-    const newNode = createDefaultNode(false);
+    const state = get();
+    const newNode = createDefaultNode(false, state.nodes);
     set((state) => ({
       nodes: [...state.nodes, newNode],
     }));
     toast.success('Node added', { description: newNode.data.label });
-    get().validate();
+    if (validateTimeout) clearTimeout(validateTimeout);
+    validateTimeout = setTimeout(() => get().validate(), 300);
   },
 
   deleteNode: (nodeId: string) => {
     const node = get().nodes.find(n => n.id === nodeId);
     set((state) => ({
-      nodes: state.nodes.filter((n) => n.id !== nodeId),
+      nodes: state.nodes
+        .filter((n) => n.id !== nodeId)
+        .map((n) => ({
+          // ✅ Remove any data.edges pointing to the deleted node
+          ...n,
+          data: {
+            ...n.data,
+            edges: n.data.edges.filter((e) => e.to_node_id !== nodeId),
+          },
+        })),
       edges: state.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
       selectedNodeId: state.selectedNodeId === nodeId ? null : state.selectedNodeId,
       startNodeId: state.startNodeId === nodeId ? null : state.startNodeId,
@@ -153,8 +169,6 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
       const newEdge = { ...edge, id: edgeId };
       
-      toast.success('Edge created successfully');
-      
       return {
         nodes: state.nodes.map((node) =>
           node.id === nodeId
@@ -181,7 +195,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
             : node
         ),
         edges: state.edges.filter(
-          (e) => !(e.source === nodeId && e.target === edgeToRemove.to_node_id)
+          (e) => e.id !== edgeId
         ),
       };
     });
@@ -231,33 +245,32 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
   onNodesChange: (changes: NodeChange[]) => {
     set((state) => {
-      const updatedNodes = applyNodeChanges(changes, state.nodes) as FlowNode[];
-      
-      // Clean up edges from node data when nodes are deleted
       const deletedNodeIds = new Set<string>();
       changes.forEach((change) => {
-        if (change.type === 'remove') {
-          deletedNodeIds.add(change.id);
-        }
+        if (change.type === 'remove') deletedNodeIds.add(change.id);
       });
-      
-      // Remove edges that reference deleted nodes
-      const cleanedNodes = updatedNodes.map((node) => {
-        if (deletedNodeIds.has(node.id)) {
-          return node;
-        }
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            edges: node.data.edges.filter(
-              (edge) => !deletedNodeIds.has(edge.to_node_id)
-            ),
-          },
-        };
-      });
-      
-      return { nodes: cleanedNodes };
+  
+      // First clean data.edges on ALL current nodes (before removal)
+      const cleanedNodes = state.nodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          edges: deletedNodeIds.size > 0
+            ? node.data.edges.filter((edge) => !deletedNodeIds.has(edge.to_node_id))
+            : node.data.edges,
+        },
+      }));
+  
+      // Then apply positional/selection/removal changes on top
+      const updatedNodes = applyNodeChanges(changes, cleanedNodes) as FlowNode[];
+  
+      const cleanedEdges = deletedNodeIds.size > 0
+        ? state.edges.filter(
+            (e) => !deletedNodeIds.has(e.source) && !deletedNodeIds.has(e.target)
+          )
+        : state.edges;
+  
+      return { nodes: updatedNodes, edges: cleanedEdges };
     });
     get().validate();
   },
@@ -309,15 +322,20 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   },
 
   onConnect: (connection: Connection) => {
+    if (connection.source === connection.target) {
+      toast.error('Cannot connect a node to itself');
+      return;
+    }
+
     set((state) => {
+      const edgeId = uuidv4();
       const newEdges = addEdge(
-        { ...connection, type: 'animated', animated: true },
+        { ...connection, id: edgeId, type: 'animated', animated: true },
         state.edges
       );
       
       const sourceNode = state.nodes.find(n => n.id === connection.source);
       if (sourceNode) {
-        const edgeId = `e_${connection.source}_${connection.target}_${Date.now()}`;
         const newEdge: FlowEdge = {
           id: edgeId,
           to_node_id: connection.target!,
@@ -335,7 +353,6 @@ export const useFlowStore = create<FlowState>((set, get) => ({
           }
           return node;
         });
-        toast.success('Connection created');
         return { edges: newEdges, nodes: updatedNodes };
       }
       
@@ -357,6 +374,22 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         });
       }
       nodeIds.add(node.data.id);
+
+      if (!node.data.label || node.data.label.trim() === '') {
+        errors.push({
+          nodeId: node.id,
+          field: 'label',
+          message: 'Node name is required',
+        });
+      }
+
+      if (!node.data.description || node.data.description.trim() === '') {
+        errors.push({
+          nodeId: node.id,
+          field: 'description',
+          message: 'Description is required',
+        });
+      }
     });
 
     if (!startNodeId) {
@@ -402,8 +435,8 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   },
 
   getFlowJson: (): string => {
-    const { nodes, startNodeId } = get();
-    const flowJson: FlowJson = {
+    const { nodes, edges, startNodeId } = get();
+    const flowJson = {
       nodes: nodes.map((node) => ({
         id: node.data.id,
         type: node.data.type,
@@ -411,6 +444,14 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         edges: node.data.edges,
         isStart: node.data.isStart,
         label: node.data.label,
+        position: node.position,
+      })),
+      edges: edges.map((edge) => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        sourceHandle: edge.sourceHandle,
+        targetHandle: edge.targetHandle,
       })),
       start_node_id: startNodeId || '',
     };

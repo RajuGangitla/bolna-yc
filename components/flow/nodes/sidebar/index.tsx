@@ -5,6 +5,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
+import { X } from 'lucide-react';
 import { useFlowStore } from '@/lib/store';
 import { NodeSidebarContent } from './sidebar-content';
 
@@ -27,7 +28,7 @@ export default function NodeSidebar() {
                     <DrawerHeader className="border-b flex flex-row items-center justify-between">
                         <DrawerTitle>Edit Node</DrawerTitle>
                         <Button variant="ghost" size="icon" onClick={handleCloseSidebar}>
-                            <span className="sr-only">Close</span>
+                            <X className="h-4 w-4" />
                         </Button>
                     </DrawerHeader>
                     <NodeSidebarContent />

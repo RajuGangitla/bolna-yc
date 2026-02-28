@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react';
+import { Loader2, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NodeVariant } from './node-variants';
 
@@ -6,9 +6,10 @@ interface NodeHeaderProps {
   variant: NodeVariant;
   label: string;
   status: string;
+  isStart?: boolean;
 }
 
-export function NodeHeader({ variant, label, status }: NodeHeaderProps) {
+export function NodeHeader({ variant, label, status, isStart }: NodeHeaderProps) {
   const Icon = variant.icon;
   
   return (
@@ -27,11 +28,19 @@ export function NodeHeader({ variant, label, status }: NodeHeaderProps) {
         </div>
       </div>
       
-      {status === 'running' && (
-        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/10">
-          <Loader2 size={12} className="animate-spin text-blue-500" />
-        </div>
-      )}
+      <div className="flex items-center gap-2">
+        {isStart && (
+          <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/10 text-green-600 text-[10px] font-bold uppercase tracking-wider">
+            <Play size={10} />
+            START
+          </span>
+        )}
+        {status === 'running' && (
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/10">
+            <Loader2 size={12} className="animate-spin text-blue-500" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

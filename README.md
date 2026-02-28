@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Flow Builder
+
+A visual workflow builder built with Next.js and React Flow.
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Visual Canvas** - Drag, add, and delete nodes on an interactive canvas
+- **Node Types** - Trigger, Agent, and Action node types with distinct icons
+- **Edge Connections** - Connect nodes by dragging from handles
+- **Node Sidebar** - Edit node name, type, and description
+- **Start Node** - Designate any node as the start node
+- **Validation** - Real-time validation with inline error messages
+- **Keyboard Shortcuts** - Press Delete to remove selected nodes
+- **Import/Export** - Export flow as JSON
 
-## Learn More
+## Design Choices
 
-To learn more about Next.js, take a look at the following resources:
+- **State Management**: Zustand store for centralized flow state
+- **UI Components**: Shadcn UI for consistent, accessible components
+- **Canvas**: React Flow (@xyflow/react) for node-based editor
+- **Node Structure**: Custom node components with header, body, footer
+- **Edge Rendering**: Custom ConditionEdge with conditional labels
+- **Validation**: Real-time validation on every state change
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+components/flow/
+├── builder/          # Main flow canvas
+├── edges/            # Custom edge components
+├── nodes/            # Node components & sidebar
+└── toolbar/          # Toolbar controls
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+lib/
+├── store.ts          # Zustand state management
+├── types.ts          # TypeScript interfaces
+└── utils.ts          # Utility functions
+```

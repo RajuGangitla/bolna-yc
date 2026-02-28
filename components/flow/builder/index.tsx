@@ -23,10 +23,12 @@ export default function FlowBuilder() {
   const [mounted, setMounted] = useState(false);
   const storeNodes = useFlowStore((state) => state.nodes);
   const edges = useFlowStore((state) => state.edges);
+  const selectedNodeId = useFlowStore((state) => state.selectedNodeId);
   const onNodesChange = useFlowStore((state) => state.onNodesChange);
   const onEdgesChange = useFlowStore((state) => state.onEdgesChange);
   const onConnect = useFlowStore((state) => state.onConnect);
   const setSelectedNode = useFlowStore((state) => state.setSelectedNode);
+  const deleteNode = useFlowStore((state) => state.deleteNode);
   const validate = useFlowStore((state) => state.validate);
 
   const nodes = storeNodes ?? [];
@@ -34,6 +36,22 @@ export default function FlowBuilder() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNodeId) {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+        
+        e.preventDefault();
+        deleteNode(selectedNodeId);
+        setSelectedNode(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedNodeId, deleteNode, setSelectedNode]);
 
   const handleNodesChange = (changes: NodeChange[]) => {
     onNodesChange(changes);
