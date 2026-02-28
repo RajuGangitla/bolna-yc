@@ -2,9 +2,14 @@
 
 A visual workflow builder built with Next.js and React Flow.
 
+![Flow Builder Demo](https://res.cloudinary.com/dvyyybjb2/image/upload/fl_preserve_transparency/v1772276036/image_qfnhe1.jpg?_s=public-apps)
+
+[![Watch Demo](https://img.youtube.com/vi/mFOXFO4F6yI/0.jpg)](https://youtu.be/mFOXFO4F6yI)
+
 ## Getting Started
 
 ```bash
+npm i
 npm run dev
 ```
 
